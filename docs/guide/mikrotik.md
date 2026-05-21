@@ -152,8 +152,22 @@ Autoriser les ports entrants nécessaires (chain `input`) :
 /ip/firewall/filter/add chain=input protocol=tcp dst-port=8729 action=accept comment="API-SSL MikroTik"
 ```
 
+::: warning Container → RouterOS REST API (obligatoire pour la licence)
+Le container interroge RouterOS sur les ports **80** (HTTP) et **443** (HTTPS) pour lire le serial matériel via REST API (cf. [section 10 : licence](#_10-variables-d-environnement-du-container)). Si le bridge `dockers` n'est pas dans `interface-list=LAN` (ou si une règle `drop !LAN` filtre l'input), ajoutez explicitement :
+
+```routeros
+/ip/firewall/filter/add chain=input action=accept \
+  src-address=172.17.0.0/24 \
+  protocol=tcp dst-port=80,443 \
+  place-before=[find where chain=input action=drop in-interface-list="!LAN"] \
+  comment="Container Wima Zone -> RouterOS REST API"
+```
+
+Sans cette règle, le container échouera au boot avec `curl-error-7` ou `curl-error-28` lors de la lecture du serial, puis `ERREUR: fingerprint invalide ou vide` — boot loop garanti.
+:::
+
 ::: tip Ordre des règles
-Placez ces règles **avant** toute règle `drop` globale du chain `input`. Sinon elles seront ignorées. Utilisez `/ip/firewall/filter/move` si besoin.
+Placez ces règles **avant** toute règle `drop` globale du chain `input`. Sinon elles seront ignorées. Utilisez `/ip/firewall/filter/move` si besoin, ou le `place-before=` ci-dessus qui le fait automatiquement.
 :::
 
 ## 8) Configurer le DNS du routeur
@@ -257,6 +271,8 @@ Le fingerprint envoyé au serveur de licences devient `serial-<SN>`, **stable au
 # Optionnel mais recommandé : restreindre à 172.17.0.0/24
 /ip/service/set www address=172.17.0.0/24
 ```
+
+⚠️ Activer le service ne suffit pas si le firewall bloque l'input depuis le bridge container. Voir la [règle `chain=input` pour `172.17.0.0/24` → ports 80/443](#_7-regles-firewall-redirection-portail-acces-admin) en section 7.
 :::
 :::
 

@@ -152,8 +152,22 @@ Omena alalana ny port miditra (chain `input`) :
 /ip/firewall/filter/add chain=input protocol=tcp dst-port=8729 action=accept comment="API-SSL MikroTik"
 ```
 
+::: warning Container → RouterOS REST API (tsy maintsy ho an'ny licence)
+Ny container dia manontany ny RouterOS amin'ny port **80** (HTTP) sy **443** (HTTPS) mba haka ny serial materially amin'ny alalan'ny REST API (jereo [fizarana 10 : licence](#_10-variables-tontolo-iainana-ho-an-ny-container)). Raha tsy ao amin'ny `interface-list=LAN` ny bridge `dockers` (na misy lalàna `drop !LAN` mihazona ny input), ampio mazava :
+
+```routeros
+/ip/firewall/filter/add chain=input action=accept \
+  src-address=172.17.0.0/24 \
+  protocol=tcp dst-port=80,443 \
+  place-before=[find where chain=input action=drop in-interface-list="!LAN"] \
+  comment="Container Wima Zone -> RouterOS REST API"
+```
+
+Raha tsy misy io lalàna io, tsy hahomby ny container amin'ny boot miaraka amin'ny `curl-error-7` na `curl-error-28` rehefa mamaky ny serial, dia `ERREUR: fingerprint invalide ou vide` — boot loop tsy mety mihatra.
+:::
+
 ::: tip Laharan'ny lalàna
-Apetraho ireo lalàna ireo **alohan'ny** `drop` ankapobeny amin'ny chain `input`. Raha tsy izany, tsy ampiasaina. Ampiasao `/ip/firewall/filter/move` raha ilaina.
+Apetraho ireo lalàna ireo **alohan'ny** `drop` ankapobeny amin'ny chain `input`. Raha tsy izany, tsy ampiasaina. Ampiasao `/ip/firewall/filter/move` raha ilaina, na ny `place-before=` etsy ambony izay manao izany ho azy.
 :::
 
 ## 8) Apetraho ny DNS an'ny routeur
@@ -255,6 +269,8 @@ Ny fingerprint alefa amin'ny serveur licence dia lasa `serial-<SN>`, **maharitra
 # Tsara raha voafetra amin'ny 172.17.0.0/24
 /ip/service/set www address=172.17.0.0/24
 ```
+
+⚠️ Tsy ampy ny manokatra ny service raha mihazona ny input avy amin'ny bridge container ny firewall. Jereo ny [lalàna `chain=input` ho an'ny `172.17.0.0/24` → port 80/443](#_7-firewall-fanondranana-portail-fidirana-admin) ao amin'ny fizarana 7.
 :::
 :::
 
